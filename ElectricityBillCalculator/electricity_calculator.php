@@ -19,10 +19,6 @@
                 <input type="number" step="any" name="current" id="current" class="form-control" required>
             </div>
             <div class="form-group">
-                <label for="hours">Usage Time (Hours):</label>
-                <input type="number" step="any" name="hours" id="hours" class="form-control" required>
-            </div>
-            <div class="form-group">
                 <label for="rate">Current Rate (sen/kWh):</label>
                 <input type="number" step="any" name="rate" id="rate" class="form-control" required>
             </div>
@@ -34,50 +30,31 @@
             // User inputs
             $voltage = $_POST['voltage'];
             $current = $_POST['current'];
-            $hours = $_POST['hours'];
             $rate = $_POST['rate'];
 
-            // Calculate Power and Energy
-            $power = $voltage * $current; // in Watts
-            $energy_per_hour = $power / 1000; // in kWh
-            $energy_per_day = $energy_per_hour * 24; // in kWh
-
-            // Convert rate from sen/kWh to RM by dividing by 100
-            $rate_in_rm = $rate / 100;
-            
-            // Charge per hour
-            $charge_per_hour_rm = $energy_per_hour * $rate_in_rm;
-
-            // Charge per day
-            $charge_per_day_rm = $energy_per_day * $rate_in_rm;
-
-            // Tariff rates for Domestic Tariff (in sen/kWh)
-            $rates = [
-                [200, 21.80],
-                [100, 33.40],
-                [300, 51.60],
-                [300, 54.60],
-                [PHP_INT_MAX, 57.10]
-            ];
-
-            // Calculate the bill based on tiers
-            $remaining_energy = $energy_per_hour;
-            $total_charge_sen = 0;
-
-            foreach ($rates as $tier) {
-                $limit = $tier[0];
-                $rate = $tier[1];
-
-                if ($remaining_energy <= 0) break;
-
-                $usage = min($remaining_energy, $limit);
-                $total_charge_sen += $usage * $rate;
-                $remaining_energy -= $usage;
+            // Functions
+            function calculate_power($voltage, $current) {
+                return $voltage * $current; // Power in Watts
             }
 
-            // Convert sen to RM and apply minimum charge
-            $total_charge_rm = $total_charge_sen / 100;
-            $total_charge_rm = max($total_charge_rm, 3.00);
+            function calculate_energy_per_hour($power) {
+                return $power / 1000; // Energy in kWh
+            }
+
+            function calculate_energy_per_day($energy_per_hour) {
+                return $energy_per_hour * 24; // Energy in kWh
+            }
+
+            function calculate_charge($energy, $rate) {
+                return $energy * ($rate / 100); // Charge in RM
+            }
+
+            // Calculation
+            $power = calculate_power($voltage, $current);
+            $energy_per_hour = calculate_energy_per_hour($power);
+            $energy_per_day = calculate_energy_per_day($energy_per_hour);
+            $charge_per_hour = calculate_charge($energy_per_hour, $rate);
+            $charge_per_day = calculate_charge($energy_per_day, $rate);
 
             // Display results
             echo "<div class='mt-4 p-4 bg-success text-white rounded'>";
@@ -85,9 +62,8 @@
             echo "<p>Power: <strong>" . number_format($power, 2) . " W</strong></p>";
             echo "<p>Energy per hour: <strong>" . number_format($energy_per_hour, 2) . " kWh</strong></p>";
             echo "<p>Energy per day: <strong>" . number_format($energy_per_day, 2) . " kWh</strong></p>";
-            echo "<p>Total Charge per hour: <strong>RM " . number_format($charge_per_hour_rm, 2) . "</strong></p>";
-            echo "<p>Total Charge per day: <strong>RM " . number_format($charge_per_day_rm, 2) . "</strong></p>";
-            echo "<p>Total Charge (based on tiered rates): <strong>RM " . number_format($total_charge_rm, 2) . "</strong></p>";
+            echo "<p>Total Charge per hour: <strong>RM " . number_format($charge_per_hour, 2) . "</strong></p>";
+            echo "<p>Total Charge per day: <strong>RM " . number_format($charge_per_day, 2) . "</strong></p>";
             echo "</div>";
         }
         ?>
